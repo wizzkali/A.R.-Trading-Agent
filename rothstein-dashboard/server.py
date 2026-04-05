@@ -16,7 +16,7 @@ MEJORAS v6:
   - Auto-refresh headers para dashboard
 """
 
-import json, os, sys, time, hashlib, secrets, traceback
+import json, os, sys, time, hashlib, secrets, traceback, requests
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -141,6 +141,40 @@ def save_state(s):
     STATE_FILE.write_text(json.dumps(s, indent=2, default=str))
 
 state = load_state()
+last_alerts = {} # { "BTCUSDT": timestamp } para evitar spam
+
+def send_telegram_alert(signal_data):
+    """Envia una alerta de alta confianza a Telegram."""
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if not bot_token or not chat_id: return
+
+    pair = signal_data["pair"]
+    action = signal_data["rl_prediction"]
+    conf = signal_data["rl_confidence"]
+    ema_sig = signal_data["signal"]
+    price = signal_data["price"]
+    
+    emoji = "🟢 COMPRA" if action == "BUY" else "🔴 VENTA"
+    
+    message = (
+        f"🤖 *RL AGENT: ALERTA DE ALTA CONFIANZA*\n\n"
+        f"📍 *Par:* {pair}\n"
+        f"⚡ *Acción:* {emoji}\n"
+        f"🎯 *Confianza:* {conf}%\n"
+        f"📊 *Señal EMA:* {ema_sig}\n"
+        f"💰 *Precio:* ${price:,.2f}\n\n"
+        f"⚠️ _El Sindicato gestiona probabilidades, no certezas._"
+    )
+    
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    payload = {"chat_id": chat_id, "text": message, "parse_mode": "Markdown"}
+    
+    try:
+        requests.post(url, json=payload, timeout=5)
+        print(f"[TELEGRAM] Alerta enviada para {pair} ({conf}%)")
+    except Exception as e:
+        print(f"[TELEGRAM ERROR] No se pudo enviar mensaje: {e}")
 
 # ─── APP ───
 app = FastAPI(title="Rothstein Dashboard", version=VERSION)
@@ -272,6 +306,14 @@ async def get_signal(pair: str = "BTCUSDT"):
                     signal_data["rl_prediction"] = rl_res["action"]
                     signal_data["rl_confidence"] = rl_res.get("confidence", 0)
                     print(f"[RL] Prediction for {pair}: {rl_res['action']} ({rl_res.get('confidence')}%)")
+                    
+                    # Alerta Telegram (si > 90% y no enviada recientemente)
+                    if signal_data["rl_prediction"] in ("BUY", "SELL") and signal_data["rl_confidence"] > 90:
+                        now = time.time()
+                        last_ts = last_alerts.get(pair, 0)
+                        if now - last_ts > 1800: # 30 min cooldown
+                            send_telegram_alert(signal_data)
+                            last_alerts[pair] = now
             except Exception as e:
                 print(f"[RL ERROR] Prediction failed: {e}")
 
