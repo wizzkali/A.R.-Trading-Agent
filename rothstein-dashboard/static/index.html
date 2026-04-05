@@ -625,6 +625,15 @@ async function fetchSignal(pair) {
       <div class="metric"><span class="metric-label">Volumen</span><span class="metric-value">${d.volume_increasing ? '▲' : '▼'} x${d.volume_ratio}</span></div>
       <div class="metric"><span class="metric-label">Confianza</span><span class="metric-value" style="color:${confColor};">${d.confidence}%</span></div>
       <div class="conf-bar"><div class="conf-fill" style="width:${d.confidence}%;background:${confColor};"></div></div>
+      
+      <div style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border);">
+        <div style="font-size:10px;color:var(--text-dim);margin-bottom:4px;">AI PREDICTION (RL):</div>
+        <div class="metric">
+          <span class="metric-label">RL Action</span>
+          <span class="metric-value" style="color:${d.rl_prediction==='BUY'?'var(--green)':d.rl_prediction==='SELL'?'var(--red)':'var(--gold)'};font-weight:bold;">${d.rl_prediction}</span>
+        </div>
+      </div>
+      
       <div class="timestamp" style="margin-top:8px;">${new Date(d.timestamp).toLocaleString('es-ES')}</div>
     `;
 

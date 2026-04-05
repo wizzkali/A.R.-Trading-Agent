@@ -49,6 +49,17 @@ from multi_signal_v4 import analyze_v4
 from position_manager import plan_entry, check_signal_invalidation
 import database
 
+# ─── RL PREDICTOR (v6 NEW) ───
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+rl_predictor = None
+try:
+    from rl_agent.predictor import predictor as rl_p
+    rl_predictor = rl_p
+except ImportError:
+    print("[RL] Predictor module not found or dependencies missing.")
+except Exception as e:
+    print(f"[RL ERROR] Failed to initialize predictor: {e}")
+
 # ─── CONFIG ───
 BASE_DIR = Path(__file__).parent
 import sys
@@ -249,8 +260,19 @@ async def get_signal(pair: str = "BTCUSDT"):
             "rsi": round(rsi, 2), "volume_increasing": vol_increasing,
             "volume_ratio": round(volumes[-1] / vol_avg, 2) if vol_avg > 0 else 1,
             "confidence": min(score, 100),
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "rl_prediction": "NONE"
         }
+
+        # RL AI Prediction
+        if rl_predictor:
+            try:
+                rl_res = rl_predictor.get_prediction(pair)
+                if rl_res.get("ok"):
+                    signal_data["rl_prediction"] = rl_res["action"]
+                    print(f"[RL] Prediction for {pair}: {rl_res['action']}")
+            except Exception as e:
+                print(f"[RL ERROR] Prediction failed: {e}")
 
         state["last_signal"] = signal_data
 
