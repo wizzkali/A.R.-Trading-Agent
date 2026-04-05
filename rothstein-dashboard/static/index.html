@@ -423,7 +423,31 @@
     </div>
   </div>
 
-  <!-- 15. HEALTH MONITOR -->
+  <!-- 15. RL AGENT STATUS -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">RL Agent Status</span>
+      <span class="card-badge" id="rlBadge">—</span>
+    </div>
+    <div id="rlContent">
+      <div class="metric"><span class="metric-label">Status</span><span class="metric-value" id="rlStatus">--</span></div>
+      <div class="metric"><span class="metric-label">Last Training</span><span class="metric-value" id="rlLastTrain">--</span></div>
+      <div class="metric"><span class="metric-label">Trades Trained</span><span class="metric-value" id="rlTradesTrained">--</span></div>
+      <div class="metric"><span class="metric-label">Entropy Loss</span><span class="metric-value" id="rlEntropy">--</span></div>
+      <div style="margin-top:8px;">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Next learning threshold:</div>
+        <div class="progress-bar">
+          <div class="progress-fill" id="rlProgressFill" style="width:0%;background:var(--blue);"></div>
+          <div class="progress-text" id="rlProgressText">0/5</div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-blue" onclick="fetchRLStatus()">REFRESH RL</button>
+    </div>
+  </div>
+
+  <!-- 16. HEALTH MONITOR -->
   <div class="card">
     <div class="card-header">
       <span class="card-title">Health Monitor</span>
@@ -503,6 +527,7 @@ async function refreshAll() {
 
   fetchSignal('BTCUSDT');
   fetchFearGreed();
+  fetchRLStatus();
 }
 
 function updateDashboard(data) {
@@ -1051,6 +1076,35 @@ async function fetchHealth() {
     document.getElementById('healthBar').innerHTML = barHTML;
   } catch(e) {
     document.getElementById('healthContent').innerHTML = '<span style="color:var(--red);">Error: ' + e.message + '</span>';
+  }
+}
+async function fetchRLStatus() {
+  const badge = document.getElementById('rlBadge');
+  const content = document.getElementById('rlStatus');
+  try {
+    const r = await fetch('/api/rl/status', { headers: headers() });
+    const d = await r.json();
+    
+    if (d.error) throw new Error(d.error);
+    
+    const isActive = d.status === 'active';
+    badge.textContent = d.status.toUpperCase();
+    badge.className = 'card-badge ' + (isActive ? 'badge-green' : 'badge-yellow');
+    
+    document.getElementById('rlStatus').textContent = d.status.toUpperCase();
+    document.getElementById('rlStatus').style.color = isActive ? 'var(--green)' : 'var(--gold)';
+    document.getElementById('rlLastTrain').textContent = d.last_training ? new Date(d.last_training).toLocaleTimeString() : 'N/A';
+    document.getElementById('rlTradesTrained').textContent = d.total_trades_trained;
+    document.getElementById('rlEntropy').textContent = d.metrics.entropy_loss;
+    
+    // Progress to next threshold
+    const pending = 5 - d.next_threshold;
+    const pct = (pending / 5) * 100;
+    document.getElementById('rlProgressFill').style.width = pct + '%';
+    document.getElementById('rlProgressText').textContent = `${pending}/5 trades`;
+    
+  } catch(e) {
+    document.getElementById('rlContent').innerHTML = '<span style="color:var(--red);">Error RL: ' + e.message + '</span>';
   }
 }
 </script>
