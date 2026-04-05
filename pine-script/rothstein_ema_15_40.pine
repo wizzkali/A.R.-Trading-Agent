@@ -1,0 +1,17 @@
+//@version=5
+indicator("Rothstein EMA 15/40", overlay=true)
+
+fast = ta.ema(close, 15)
+slow = ta.ema(close, 40)
+
+plot(fast, color=color.blue, linewidth=2)
+plot(slow, color=color.red, linewidth=2)
+
+crossUp = ta.crossover(fast, slow)
+crossDown = ta.crossunder(fast, slow)
+
+plotshape(crossUp, style=shape.triangleup, location=location.belowbar, color=color.green, size=size.small)
+plotshape(crossDown, style=shape.triangledown, location=location.abovebar, color=color.red, size=size.small)
+
+alertcondition(crossUp, title="Golden Cross", message="Golden Cross EMA 15/40 en BTCUSDT")
+alertcondition(crossDown, title="Death Cross", message="Death Cross EMA 15/40 en BTCUSDT")

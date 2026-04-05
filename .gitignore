@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+env/
+.env
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Datos sensibles
+*.key
+*.pem
+config/*.json
+!config/*.template.json
+paper-trading/*.xlsx
+!paper-trading/*.template.xlsx
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
