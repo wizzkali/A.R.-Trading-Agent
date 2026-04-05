@@ -29,23 +29,33 @@ class TradingEnv(gym.Env):
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(10,), dtype=np.float32)
         
         self.reset()
-
+        
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.balance = self.initial_balance
         self.shares_held = 0
         self.net_worth = self.initial_balance
+        self.max_net_worth = self.initial_balance # Tracking peak for drawdown
         self.current_step = 0
-        self.history = []
+        self.prev_price = self.df.iloc[0]['close'] # For direction bonus
         return self._get_observation(), {}
 
     def _get_observation(self):
-        # Extraer indicadores de la fila actual
+        # Extraer indicadores de la fila actual (Ya normalizados en prepare_data o aquí)
         row = self.df.iloc[self.current_step]
+        
+        # Clip para asegurar rango [0, 1]
         obs = np.array([
-            row['rsi'], row['ema_fast_dist'], row['ema_slow_dist'], 
-            row['macd'], row['macd_signal'], row['atr'], 
-            row['vol_ratio'], row['price_norm'], row['hour_norm'], row['day_norm']
+            np.clip(row['rsi'], 0, 1),
+            np.clip(row['ema_fast_dist'] + 0.5, 0, 1), # Centrado en 0.5
+            np.clip(row['ema_slow_dist'] + 0.5, 0, 1),
+            np.clip(row['macd'] * 10 + 0.5, 0, 1), # Escalado
+            0.5, # macd_signal placeholder
+            np.clip(row['atr'] * 20, 0, 1),
+            np.clip(row['vol_ratio'] / 5, 0, 1),
+            np.clip(row['price_norm'], 0, 1),
+            0.5, # hour_norm
+            0.5  # day_norm
         ], dtype=np.float32)
         return obs
 
@@ -53,12 +63,12 @@ class TradingEnv(gym.Env):
         current_price = self.df.iloc[self.current_step]['close']
         
         # Ejecutar Accion
-        reward = 0
-        if action == 1: # COMPRAR
+        pnl_reward = 0
+        if action == 1: # COMPRAR / LONG
             if self.shares_held == 0:
                 self.shares_held = self.balance / (current_price * (1 + self.fee_pct))
                 self.balance = 0
-        elif action == 2: # VENDER
+        elif action == 2: # VENDER / SHORT (simplificado a cerrar posicion)
             if self.shares_held > 0:
                 self.balance = self.shares_held * current_price * (1 - self.fee_pct)
                 self.shares_held = 0
@@ -67,10 +77,27 @@ class TradingEnv(gym.Env):
         self.current_step += 1
         done = self.current_step >= len(self.df) - 1
         
-        # Calcular Net Worth
+        # 1. PNL Reward (Pure gain/loss)
         new_net_worth = self.balance + (self.shares_held * current_price)
-        reward = (new_net_worth - self.net_worth) / self.net_worth
+        pnl_reward = (new_net_worth - self.net_worth) / self.net_worth
         self.net_worth = new_net_worth
+        
+        # 2. Drawdown Penalty
+        if self.net_worth > self.max_net_worth:
+            self.max_net_worth = self.net_worth
+        drawdown = (self.max_net_worth - self.net_worth) / self.max_net_worth
+        dd_penalty = -0.1 * drawdown # Penalizacion proporcional
+        
+        # 3. Direction Bonus
+        price_diff = current_price - self.prev_price
+        direction_bonus = 0
+        if (price_diff > 0 and action == 1) or (price_diff < 0 and action == 2):
+            direction_bonus = 0.005 # Bonus por acierto de direccion
+        elif (price_diff < 0 and action == 1) or (price_diff > 0 and action == 2):
+            direction_bonus = -0.005 # Penalizacion por error
+            
+        reward = pnl_reward + dd_penalty + direction_bonus
+        self.prev_price = current_price
         
         return self._get_observation(), reward, done, False, {}
 
