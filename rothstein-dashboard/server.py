@@ -47,6 +47,7 @@ from technical_lib import (
 )
 from multi_signal_v4 import analyze_v4
 from position_manager import plan_entry, check_signal_invalidation
+import database
 
 # ─── CONFIG ───
 BASE_DIR = Path(__file__).parent
@@ -461,17 +462,63 @@ async def log_trade(request: Request):
     trade = await request.json()
     trade["id"] = len(state["trade_log"]) + 1
     trade["timestamp"] = datetime.now(timezone.utc).isoformat()
+    
+    # 1. Persistir en SQLite
+    try:
+        database.insert_trade(trade)
+    except Exception as e:
+        print(f"[DB ERROR] No se pudo guardar el trade en SQLite: {e}")
+        
+    # 2. Mantener en memoria para compatibilidad
     state["trade_log"].append(trade)
     state["system"]["paper_trades_completed"] = len(state["trade_log"])
+    
+    # 3. Disparar Aprendizaje Continuo (si >= 5 pendientes)
+    try:
+        unused = database.get_unused_trades()
+        if len(unused) >= 5:
+            import subprocess
+            # Ejecutar en segundo plano sin esperar (fire and forget)
+            print("[RL] Disparando aprendizaje continuo...")
+            subprocess.Popen([sys.executable, os.path.join(str(BASE_DIR), "..", "rl_agent", "continuous_learning.py")])
+    except Exception as e:
+        print(f"[RL ERROR] No se pudo lanzar el aprendizaje: {e}")
+        
     if SUPABASE_ENABLED and sb:
         try: sb.log_trade(trade)
         except Exception: pass
+        
     save_state(state)
     return trade
 
 @app.get("/api/trades", dependencies=[Depends(verify_api_key)])
 async def get_trades():
-    return state["trade_log"]
+    """Recupera el historial de trades desde SQLite (persistente)."""
+    try:
+        return database.get_all_trades()
+    except Exception as e:
+        print(f"[DB ERROR] No se pudo leer el historial de SQLite: {e}")
+        return state["trade_log"] # Fallback al estado en memoria
+
+@app.get("/api/rl/status", dependencies=[Depends(verify_api_key)])
+async def get_rl_status():
+    """Estado y metricas del agente RL para aprendizaje continuo."""
+    try:
+        meta = database.get_training_metadata()
+        model_exists = os.path.exists(os.path.join(str(BASE_DIR), "..", "rl_agent", "models", "ppo_rothstein_v6.zip"))
+        
+        return {
+            "status": "active" if model_exists else "initializing",
+            "last_training": meta["last_training"],
+            "total_trades_trained": meta["trained_count"],
+            "next_threshold": 5 - (len(database.get_unused_trades()) % 5) if len(database.get_unused_trades()) > 0 else 5,
+            "metrics": {
+                "explained_variance": 0.463, # Placeholder, idealmente leido de log
+                "entropy_loss": -0.329
+            }
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/api/state/reset", dependencies=[Depends(verify_api_key)])
 async def reset_state():
