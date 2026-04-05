@@ -619,8 +619,8 @@ async function fetchSignal(pair) {
       <div class="signal-type ${signalClass}">${d.signal}</div>
       <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">${d.signal_type}</div>
       <div class="metric"><span class="metric-label">Precio</span><span class="metric-value">$${d.price.toLocaleString()}</span></div>
-      <div class="metric"><span class="metric-label">EMA 20</span><span class="metric-value">$${d.ema20.toLocaleString()}</span></div>
-      <div class="metric"><span class="metric-label">EMA 50</span><span class="metric-value">$${d.ema50.toLocaleString()}</span></div>
+      <div class="metric"><span class="metric-label">EMA Fast</span><span class="metric-value">$${d.ema_fast.toLocaleString()}</span></div>
+      <div class="metric"><span class="metric-label">EMA Slow</span><span class="metric-value">$${d.ema_slow.toLocaleString()}</span></div>
       <div class="metric"><span class="metric-label">RSI (14)</span><span class="metric-value" style="color:${d.rsi > 70 ? 'var(--red)' : d.rsi < 30 ? 'var(--green)' : 'var(--text)'};">${d.rsi}</span></div>
       <div class="metric"><span class="metric-label">Volumen</span><span class="metric-value">${d.volume_increasing ? '▲' : '▼'} x${d.volume_ratio}</span></div>
       <div class="metric"><span class="metric-label">Confianza</span><span class="metric-value" style="color:${confColor};">${d.confidence}%</span></div>
