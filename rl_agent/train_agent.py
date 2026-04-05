@@ -113,32 +113,49 @@ def prepare_data(pair="BTCUSDT"):
     lows = data["lows"]
     volumes = data["volumes"]
     
-    # Calcular indicadores base
+    # Calcular indicadores base as series
     ema_f = technical_lib.calc_ema(closes, 15)
     ema_s = technical_lib.calc_ema(closes, 40)
-    rsi = technical_lib.calc_rsi(closes)
-    atr = technical_lib.calc_atr(highs, lows, closes)
+    rsi_s = technical_lib.calc_rsi_series(closes)
     
-    # DataFrame para el entorno RL
+    # Simple ATR series implementation if missing in technical_lib
+    trs = [0.0]
+    for i in range(1, len(closes)):
+        tr = max(highs[i] - lows[i], abs(highs[i] - closes[i - 1]), abs(lows[i] - closes[i - 1]))
+        trs.append(tr)
+    atr_s = pd.Series(trs).rolling(window=14).mean().tolist()
+    
+    # DataFrame inicial para limpiar Nones
     df = pd.DataFrame({
         'close': closes,
-        'rsi': rsi / 100.0, # Normalizado
-        'ema_fast_dist': (closes - np.array(ema_f)) / closes,
-        'ema_slow_dist': (closes - np.array(ema_s)) / closes,
-        'macd': (np.array(ema_f) - np.array(ema_s)) / closes,
+        'ema_fast': ema_f,
+        'ema_slow': ema_s,
+        'rsi': rsi_s,
+        'atr': atr_s
+    })
+    df = df.dropna()
+    
+    # Calcular features finales sobre datos limpios
+    final_df = pd.DataFrame({
+        'close': df['close'],
+        'rsi': df['rsi'] / 100.0,
+        'ema_fast_dist': (df['close'] - df['ema_fast']) / df['close'],
+        'ema_slow_dist': (df['close'] - df['ema_slow']) / df['close'],
+        'macd': (df['ema_fast'] - df['ema_slow']) / df['close'],
         'macd_signal': 0, # Placeholder
-        'atr': np.array(atr) / closes,
+        'atr': df['atr'] / df['close'],
         'vol_ratio': 1.0, # Placeholder
-        'price_norm': closes / max(closes),
+        'price_norm': df['close'] / df['close'].max(),
         'hour_norm': 0, # Placeholder
         'day_norm': 0 # Placeholder
-    }).dropna()
+    })
     
-    return df
+    return final_df
 
 def train():
-    # Cargar Config
-    with open('config_rl.json') as f:
+    # Cargar Config (Ruta relativa al script)
+    config_path = os.path.join(os.path.dirname(__file__), 'config_rl.json')
+    with open(config_path) as f:
         config = json.load(f)
         
     df = prepare_data(config["env_params"]["symbol"])

@@ -1,0 +1,63 @@
+{
+  "circuit_breaker": {
+    "locked": false,
+    "locked_at": "2026-04-05T17:38:28.914688+00:00",
+    "reason": "daily_loss_-15.0%",
+    "daily_pnl_pct": -15.0,
+    "unlock_history": [
+      {
+        "time": "2026-04-05T17:38:28.568520+00:00",
+        "method": "auto_confidence",
+        "confidence": 60
+      },
+      {
+        "time": "2026-04-05T17:38:29.716499+00:00",
+        "method": "auto_confidence",
+        "confidence": 60
+      }
+    ]
+  },
+  "system": {
+    "paused": false,
+    "paused_at": null,
+    "mode": "paper_trading",
+    "paper_trades_completed": 1,
+    "paper_trades_target": 20
+  },
+  "last_signal": {
+    "pair": "BTCUSDT",
+    "price": 67363.71,
+    "signal": "MANTENER_LONG",
+    "signal_type": "TENDENCIA_ALCISTA",
+    "ema_fast": 67146.96,
+    "ema_slow": 67124.2,
+    "rsi": 58.09,
+    "volume_increasing": false,
+    "volume_ratio": 0.29,
+    "confidence": 60,
+    "timestamp": "2026-04-05T17:56:42.833859+00:00",
+    "rl_prediction": "HOLD",
+    "rl_confidence": 89.6
+  },
+  "last_macro_check": null,
+  "last_fear_greed": {
+    "value": 12,
+    "classification": "Extreme Fear"
+  },
+  "trade_log": [
+    {
+      "sl": 59000,
+      "tp": 62000,
+      "side": "BUY",
+      "symbol": "BTCUSDT",
+      "entry_price": 60000,
+      "resultado": "WIN",
+      "score": 8,
+      "pnl": 100,
+      "id": 1,
+      "timestamp": "2026-04-05T17:19:21.468153+00:00"
+    }
+  ],
+  "daily_pnl": [],
+  "open_positions": []
+}

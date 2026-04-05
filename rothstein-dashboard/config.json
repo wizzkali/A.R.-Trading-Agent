@@ -1,0 +1,36 @@
+{
+  "symbol": "BTCUSDT",
+  "timeframe": "4h",
+  "ema_fast": 15,
+  "ema_slow": 40,
+  "rsi_period": 14,
+  "atr_period": 14,
+  "sl_atr_mult": 1.5,
+  "tp_sl_ratio": 2.5,
+  "min_score": 7,
+  "fear_greed_min": 45,
+  "fear_greed_max": 75,
+  "macro_blackout_hours": 4,
+  "trailing_activation_pct": 0.1,
+  "max_open_trades": 2,
+  "cooldown_minutes": 5,
+  "api_key": "YOUR_API_KEY",
+  "port": 8080,
+  "capital_usdt": 1000,
+  "daily_loss_limit_pct": 0.15,
+  "max_position_pct": 0.2,
+  "min_rr_ratio": 2.5,
+  "confidence_auto_unlock_pct": 0.85,
+  "host": "0.0.0.0",
+  "exchanges": {
+    "binance": {
+      "enabled": true
+    },
+    "kucoin": {
+      "enabled": false
+    },
+    "polymarket": {
+      "enabled": true
+    }
+  }
+}
