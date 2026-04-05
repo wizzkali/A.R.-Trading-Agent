@@ -1,0 +1,26 @@
+{
+  "agent_params": {
+    "policy": "MlpPolicy",
+    "learning_rate": 0.0003,
+    "gamma": 0.99,
+    "n_steps": 2048,
+    "batch_size": 64,
+    "n_epochs": 10,
+    "ent_coef": 0.01,
+    "clip_range": 0.2,
+    "verbose": 1
+  },
+  "env_params": {
+    "symbol": "BTCUSDT",
+    "timeframe": "1h",
+    "history_window": 100,
+    "max_steps": 1000,
+    "initial_balance": 10000,
+    "fee_pct": 0.001
+  },
+  "training": {
+    "total_timesteps": 100000,
+    "load_previous": false,
+    "model_path": "rl_agent/models/ppo_rothstein_v6"
+  }
+}
