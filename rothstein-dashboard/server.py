@@ -210,6 +210,7 @@ async def get_status():
     return {
         "version": VERSION,
         "timestamp": datetime.now(timezone.utc).isoformat(),
+        "blocked": state["circuit_breaker"]["locked"],
         "system": state["system"],
         "circuit_breaker": state["circuit_breaker"],
         "last_signal": state["last_signal"],
@@ -767,15 +768,22 @@ def check_connections_parallel() -> dict:
     return results
 
 def calculate_stats():
-    trades = state["trade_log"]
+    """Calcula estadisticas basadas en el historial completo de SQLite."""
+    try:
+        trades = database.get_all_trades()
+    except Exception:
+        trades = []
+        
     if not trades:
         return {"total": 0, "wins": 0, "losses": 0, "win_rate": 0, "total_pnl": 0}
+        
     wins = [t for t in trades if t.get("pnl", 0) > 0]
     total_pnl = sum(t.get("pnl", 0) for t in trades)
+    
     return {
         "total": len(trades), "wins": len(wins),
         "losses": len(trades) - len(wins),
-        "win_rate": round(len(wins) / len(trades) * 100, 1),
+        "win_rate": round(len(wins) / len(trades) * 100, 1) if len(trades) > 0 else 0,
         "total_pnl": round(total_pnl, 2)
     }
 

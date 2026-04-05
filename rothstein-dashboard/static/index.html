@@ -533,7 +533,7 @@ async function refreshAll() {
 function updateDashboard(data) {
   // System status
   const paused = data.system.paused;
-  const locked = data.circuit_breaker.locked;
+  const locked = data.blocked;
   let statusHTML = '';
   if (locked) statusHTML = '<span class="status-dot dot-red"></span> BLOQUEADO';
   else if (paused) statusHTML = '<span class="status-dot dot-yellow"></span> PAUSADO';

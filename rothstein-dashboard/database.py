@@ -88,6 +88,15 @@ def get_training_metadata():
     conn.close()
     return {"trained_count": count, "last_training": last_ts}
 
+def get_all_trades():
+    """Recupera el historial completo de trades desde SQLite."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM trades ORDER BY timestamp DESC')
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
 # Inicializar al importar
-if not DB_PATH.exists():
-    init_db()
+init_db()
