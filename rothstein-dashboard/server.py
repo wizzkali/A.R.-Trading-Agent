@@ -270,7 +270,8 @@ async def get_signal(pair: str = "BTCUSDT"):
                 rl_res = rl_predictor.get_prediction(pair)
                 if rl_res.get("ok"):
                     signal_data["rl_prediction"] = rl_res["action"]
-                    print(f"[RL] Prediction for {pair}: {rl_res['action']}")
+                    signal_data["rl_confidence"] = rl_res.get("confidence", 0)
+                    print(f"[RL] Prediction for {pair}: {rl_res['action']} ({rl_res.get('confidence')}%)")
             except Exception as e:
                 print(f"[RL ERROR] Prediction failed: {e}")
 

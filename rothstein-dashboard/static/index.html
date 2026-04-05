@@ -632,6 +632,11 @@ async function fetchSignal(pair) {
           <span class="metric-label">RL Action</span>
           <span class="metric-value" style="color:${d.rl_prediction==='BUY'?'var(--green)':d.rl_prediction==='SELL'?'var(--red)':'var(--gold)'};font-weight:bold;">${d.rl_prediction}</span>
         </div>
+        <div class="metric">
+          <span class="metric-label">RL Confidence</span>
+          <span class="metric-value">${d.rl_confidence || 0}%</span>
+        </div>
+        <div class="conf-bar" style="height:3px;"><div class="conf-fill" style="width:${d.rl_confidence || 0}%;background:var(--blue);"></div></div>
       </div>
       
       <div class="timestamp" style="margin-top:8px;">${new Date(d.timestamp).toLocaleString('es-ES')}</div>

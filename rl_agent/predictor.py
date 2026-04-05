@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import pandas as pd
+import torch
 from stable_baselines3 import PPO
 
 # Añadir carpetas al path para importar dependencias
@@ -80,12 +81,22 @@ class RLPredictor:
                 0.5  # day_norm
             ], dtype=np.float32)
             
-            # 4. Predecir
-            action, _states = self.model.predict(obs, deterministic=True)
+            # 4. Predecir Acción y Confianza
+            # SB3 PPO uses Categorical distribution under the hood for Discrete action spaces.
+            # We get the probabilities using the policy.
+            obs_tensor, _ = self.model.policy.obs_to_tensor(obs)
+            with torch.no_grad():
+                # policy.get_distribution returns a Categorical/DiagGaussian depending on space
+                dist = self.model.policy.get_distribution(obs_tensor)
+                probs = dist.distribution.probs[0].cpu().numpy() # [prob_hold, prob_buy, prob_sell]
+            
+            action = np.argmax(probs)
+            confidence = float(probs[action]) * 100
             
             actions_map = {0: "HOLD", 1: "BUY", 2: "SELL"}
             return {
                 "action": actions_map.get(int(action), "HOLD"),
+                "confidence": round(confidence, 1),
                 "ok": True
             }
             
